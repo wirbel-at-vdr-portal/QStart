@@ -6,20 +6,19 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, windows,
-  Buttons, ExtCtrls;
+  Buttons, ExtCtrls, finfo;
 
 type
 
   progInfo = record
-     LinkName: string;
-     ProgName: string;
+     ShortCut: string;
+     Props   : TLinkProperties;
      Button  : TBitBtn;
   end;
 
   { TForm1 }
 
   TForm1 = class(TForm)
-    BitBtn1: TBitBtn;
     procedure FormClose(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure ButtonsClick(Sender: TObject);
@@ -35,24 +34,44 @@ var
 implementation
 
 {$R *.lfm}
-uses inifiles, finfo, LazFileUtils;
+uses inifiles, LazFileUtils;
 
 var
   ini:TIniFile;
+  iniPath:string;
   ButtonArray: array of progInfo;
   yOffset:integer = 20;
 
 
 procedure DoTask(index:integer);
-var fName:string;
+var
+  pFile:PChar;
+  pArgs:PChar;
+  pWorkingDir:PChar;
 begin
-  fName:= ButtonArray[index].ProgName;
-  if fileExists(fname) then
-     try
-     // http://stackoverflow.com/questions/9115574/how-can-you-open-a-file-with-the-program-associated-with-its-file-extension
-     Shellexecute(0, nil, PChar(fname),nil,nil,SW_SHOW);
-     except
+  if Length(ButtonArray[index].Props.FullPath) < 1 then
+     begin
+     ShowMessage('Button' +IntToStr(index) + ':' + #13#10 +
+                 'Could not find the executable path for ' + ButtonArray[index].ShortCut);
+     exit;
      end;
+  try
+     // http://stackoverflow.com/questions/9115574/how-can-you-open-a-file-with-the-program-associated-with-its-file-extension
+     pFile := PChar(ButtonArray[index].Props.FullPath);
+
+     if ButtonArray[index].Props.Arguments <> '' then
+        pArgs := PChar(ButtonArray[index].Props.Arguments)
+     else
+        pArgs := NIL;
+
+     if ButtonArray[index].Props.WorkingDirectory <> '' then
+        pWorkingDir := PChar(ButtonArray[index].Props.WorkingDirectory)
+     else
+        pWorkingDir := NIL;
+
+     Shellexecute(0, nil, pFile, pArgs, pWorkingDir, SW_SHOW);
+  except
+  end;
 end;
 
 
@@ -71,19 +90,24 @@ var
   btn:TBitBtn;
   bmp:graphics.TBitmap;
   ico:TIcon;
-  s:string;
 begin
   for i:=0 to Length(ButtonArray)-1 do
      begin
+     ButtonArray[i].Props.ShortCut:='';
+     GetLinkProperties(ButtonArray[i].ShortCut, ButtonArray[i].Props);
+
      btn := TBitBtn.Create(Self);
      ButtonArray[i].Button := btn;
-     s := GetShortcutTarget(ButtonArray[i].LinkName);
-     ButtonArray[i].ProgName:=s;
 
-     btn.Parent        := Self;
+     btn.Parent        := Form1;
      btn.Align         := alNone;
      btn.AutoSize      := False;
-     btn.Caption       := ExtractFileNameOnly(ButtonArray[i].LinkName);
+     btn.Caption       := ExtractFileNameOnly(ButtonArray[i].ShortCut);
+     if ButtonArray[i].Props.Arguments <> '' then
+        btn.Hint          := 'Run "' + ButtonArray[i].Props.FullPath + ' ' + ButtonArray[i].Props.Arguments + '"'
+     else
+        btn.Hint          := 'Run "' + ButtonArray[i].Props.FullPath + '"';
+     btn.ShowHint      := true;
      btn.Name          := 'Button' + IntToStr(1+i);
      btn.TabOrder      := i;
      btn.Left          := 10;
@@ -92,8 +116,12 @@ begin
      btn.Margin        := 2;
      btn.Tag           := i;
      btn.OnClick       := @ButtonsClick;
+     btn.Color         := Form1.Color;
 
-     ico := GetIcon(s, false);
+     if Length(ButtonArray[i].Props.FullPath) < 1 then
+        ico := GetIcon('*.lnk', false)
+     else
+        ico := GetIcon(ButtonArray[i].Props.FullPath, false);
      bmp:=graphics.TBitmap.Create;
      bmp.height := ico.height;
      bmp.width := ico.width;
@@ -101,9 +129,8 @@ begin
      btn.Glyph := bmp;
      ico.Free;
 
-
      {
-     Color         := clGreen;
+
      ParentFont    := False;
      Font          := LabelFont;
      Width    := LabelWidth;
@@ -111,6 +138,7 @@ begin
      Left     := xpos;
      Top      := ypos;
      }
+     Application.ProcessMessages;
      end;
 
   Form1.Height := yOffset + 30;
@@ -118,7 +146,6 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  iniPath:string;
   localDir:string;
   username:array[0..63] of char;
   sr:TSearchRec;
@@ -134,6 +161,8 @@ begin
      begin
      ini := TIniFile.Create(iniPath);
      localDir:=ini.ReadString('Global', 'LocalDir', localDir);
+     Form1.Top :=ini.ReadInteger('Form1', 'Top', 100);
+     Form1.Left:=ini.ReadInteger('Form1', 'Left', 100);
      ini.Free;
      end
   else
@@ -154,8 +183,9 @@ begin
         if (sr.Name = '.') or (sr.Name = '..') or (sr.Name = 'desktop.ini') then
            continue;
         SetLength(ButtonArray, Length(ButtonArray) + 1);
-        ButtonArray[n].LinkName:=localDir + '\' + sr.Name;
+        ButtonArray[n].ShortCut:=localDir + '\' + sr.Name;
         inc(n);
+        Application.ProcessMessages;
         until sysutils.FindNext(sr) <> 0;
         sysutils.FindClose(sr);
         end;
@@ -167,6 +197,10 @@ end;
 procedure TForm1.FormClose(Sender: TObject);
 begin
   SetLength(ButtonArray,0);
+  ini := TIniFile.Create(iniPath);
+  ini.WriteInteger('Form1', 'Top',  Form1.Top);
+  ini.WriteInteger('Form1', 'Left', Form1.Left);
+  ini.Free;
 end;
 
 
