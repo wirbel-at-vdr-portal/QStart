@@ -12,6 +12,9 @@ If you click on it, it opens a new window with program start buttons.
 
 ![doc/QStart.png](doc/QStart.png)
 
+# Installation
+No need for an installation. Just copy the exe to a convenient folder.
+
 # Configuring QStart
 This tool depends on one folder with Windows shortcuts to programs (*.lnk). The default folder is
 
