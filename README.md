@@ -27,5 +27,14 @@ LocalDir=c:\users\MUSTERMANN\AppData\Roaming\Microsoft\Internet Explorer\Quick L
 
 # What this tool does..
 For every shortcut found, the programs reads from the link full path, arguments and working folder. Then, a button is created for each link with this information.
+If you click on one of the buttons, ShellExecuteA is called for it, with the data read from the shortcut.
 
+# Limitations
+Some shortcuts doesn't have a full path, so there is nothing to read with easy ways. For example the 'show desktop' shortcut. Those will fail.
 
+# Usage
+If you like the program, feel free to use it.
+
+# Safety
+If you want to be safe, check evry line of the code and compile on your own. :)
+Otherwise, the compiled binary can be found in the folder **binary**.
