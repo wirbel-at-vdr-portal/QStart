@@ -32,9 +32,67 @@ type
    WorkingDirectory: string;
  end;
 
+ pIDispatch = ^IDispatch;
+ ppIDispatch = ^pDispatch;
+ BSTR = WideString;
+
+ IShellDispatch4  = Interface(IDispatch)
+     ['{EFD84B2D-4BCF-4298-BE25-EB542A59FBDA}']
+    function get_Application(ppid:ppIDispatch):HRESULT;                                                    StdCall;
+    function get_Parent(ppid:ppIDispatch):HRESULT;                                                         StdCall;
+    function NameSpace(vDir:OLEvariant; Folder:pointer):HRESULT;                                           StdCall;
+    function BrowseForFolder(Hwnd:longint; Title:BSTR; Options:longint; RootFolder:OLEvariant;
+                             Folder:pointer):HRESULT;                                                      StdCall;
+    function Windows(ppid: ppIDispatch):HRESULT;                                                           StdCall;
+    function Open(vDir:OLEvariant):HRESULT;                                                                StdCall;
+    function Explore(vDir:OLEvariant):HRESULT;                                                             StdCall;
+    function MinimizeAll:HRESULT;                                                                          StdCall;
+    function UndoMinimizeALL:HRESULT;                                                                      StdCall;
+    function FileRun:HRESULT;                                                                              StdCall;
+    function CascadeWindows:HRESULT;                                                                       StdCall;
+    function TileVertically:HRESULT;                                                                       StdCall;
+    function TileHorizontally:HRESULT;                                                                     StdCall;
+    function ShutdownWindows:HRESULT;                                                                      StdCall;
+    function Suspend:HRESULT;                                                                              StdCall;
+    function EjectPC:HRESULT;                                                                              StdCall;
+    function SetTime:HRESULT;                                                                              StdCall;
+    function TrayProperties:HRESULT;                                                                       StdCall;
+    function Help:HRESULT;                                                                                 StdCall;
+    function FindFiles:HRESULT;                                                                            StdCall;
+    function FindComputer:HRESULT;                                                                         StdCall;
+    function RefreshMenu:HRESULT;                                                                          StdCall;
+    function ControlPanelItem(bstrDir:BSTR):HRESULT;                                                       StdCall;
+    { IShellDispatch2 }
+    function IsRestricted(Group:BSTR; Restriction:BSTR; var plRestrictValue:DWord):HRESULT;                StdCall;
+    function ShellExecute(aFile:BSTR; vArgs:OLEvariant; vDir:OLEvariant;
+                          vOperation:OLEvariant; vShow:OLEvariant):HRESULT;                                StdCall;
+    function FindPrinter(name:BSTR; location:BSTR; model:BSTR):HRESULT;                                    StdCall;
+    function GetSystemInformation(name:BSTR; var pv:OLEvariant):HRESULT;                                   StdCall;
+    function ServiceStart(ServiceName:BSTR; Persistent:OLEvariant; var pSuccess:OLEvariant):HRESULT;       StdCall;
+    function ServiceStop(ServiceName:BSTR; Persistent:OLEvariant; var pSuccess:OLEvariant):HRESULT;        StdCall;
+    function IsServiceRunning(ServiceName:BSTR; var pRunning:OLEvariant):HRESULT;                          StdCall;
+    function CanStartStopService(ServiceName:BSTR; var pCanStartStop:OLEvariant):HRESULT;                  StdCall;
+    function ShowBrowserBar(bstrClsid:BSTR; bShow:OLEvariant; var pSuccess:OLEvariant):HRESULT;            StdCall;
+    { IShellDispatch3 }
+    function AddToRecent(varFile:OLEvariant; bstrCategory:BSTR):HRESULT;                                   StdCall;
+    { IShellDispatch4 }
+    function WindowsSecurity:HRESULT;                                                                      StdCall;
+    function ToggleDesktop:HRESULT;                                                                        StdCall;
+    function ExplorerPolicy(bstrPolicyName:BSTR; var pValue: OLEvariant):HRESULT;                          StdCall;
+    function GetSetting(lSetting:long; var Result:Word):HRESULT;                                           StdCall;
+end;
+
+ IUnknownFixed = interface
+   ['{00000000-0000-0000-C000-000000000046}']
+   function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} iid : tguid;out obj) : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF}; override;
+   function AddRef : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
+   function Release : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
+ end;
+
 
 function GetIcon(aFile:string; large:boolean):TIcon;
 function GetLinkProperties(const ShortCut:string; var Props:TLinkProperties):boolean;
+procedure ShowDesktop;
 
 implementation
 
@@ -42,7 +100,36 @@ uses unit1, ShellAPI, ActiveX, ShlObj;
 
 var FileInfo : TSHFILEINFO;
 
+procedure ShowDesktop;
+const
+  IID_IDispatch: TGUID =
+    (D1:$00020400; D2:$0000; D3:$0000; D4:($C0,$00,$00,$00,$00,$00,$00,$46));
+  CLSID_Shell: TGUID =
+    (D1:$13709620; D2:$C279; D3:$11CE; D4:($A4,$9E,$44,$45,$53,$54,$00,$00));
+var
+  pShellDispatch4: IShellDispatch4;
+  fixed:IUnknownFixed;
+  p:pointer;
+begin
+  // https://stackoverflow.com/questions/6582000/executing-show-desktop-from-c
 
+
+  { for some strange reason, IUnknown in objpash.inc:260ff misses 'Release' but
+    has '_Release' - why?? Had to add Relase there. }
+
+  { do we need here a CoInitialize(NIL); ?? }
+
+  // Create an instance of the shell class
+  CoCreateInstance(CLSID_Shell, nil, CLSCTX_INPROC_SERVER, IID_IDispatch, pShellDispatch4);
+  // Toggle the desktop
+  pShellDispatch4.ToggleDesktop;
+
+ { for some strange reason, IUnknown in objpash.inc:260ff misses 'Release' but
+   has '_Release' - why?? Had to add Relase there. }
+  p := pShellDispatch4;
+  fixed := IUnknownFixed(p);
+  fixed.Release;
+end;
 
 function GetLinkProperties(const ShortCut:string; var Props:TLinkProperties):boolean;
 const

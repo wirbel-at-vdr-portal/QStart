@@ -48,12 +48,19 @@ var
   pFile:PChar;
   pArgs:PChar;
   pWorkingDir:PChar;
+  desc:string;
 begin
   if Length(ButtonArray[index].Props.FullPath) < 1 then
      begin
-     ShowMessage('Button' +IntToStr(index) + ':' + #13#10 +
-                 'Could not find the executable path for ' + ButtonArray[index].ShortCut);
-     exit;
+     desc := ButtonArray[index].Props.Description;
+     if (desc = 'Desktop anzeigen') or (desc = 'Shows Desktop') then
+        ShowDesktop
+     else
+        begin
+        ShowMessage('Button' +IntToStr(index) + ':' + #13#10 +
+                    'Could not find the executable path for ' + ButtonArray[index].ShortCut);
+        exit;
+       end;
      end;
   try
      // http://stackoverflow.com/questions/9115574/how-can-you-open-a-file-with-the-program-associated-with-its-file-extension
