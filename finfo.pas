@@ -36,8 +36,8 @@ type
  ppIDispatch = ^pDispatch;
  BSTR = WideString;
 
- IShellDispatch4  = Interface(IDispatch)
-     ['{EFD84B2D-4BCF-4298-BE25-EB542A59FBDA}']
+ IShellDispatch = Interface(IDispatch)
+    ['{D8F015C0-C278-11CE-A49E-444553540000}']
     function get_Application(ppid:ppIDispatch):HRESULT;                                                    StdCall;
     function get_Parent(ppid:ppIDispatch):HRESULT;                                                         StdCall;
     function NameSpace(vDir:OLEvariant; Folder:pointer):HRESULT;                                           StdCall;
@@ -62,7 +62,10 @@ type
     function FindComputer:HRESULT;                                                                         StdCall;
     function RefreshMenu:HRESULT;                                                                          StdCall;
     function ControlPanelItem(bstrDir:BSTR):HRESULT;                                                       StdCall;
-    { IShellDispatch2 }
+    end;
+
+ IShellDispatch2 = Interface(IShellDispatch)
+    ['{A4C6892C-3BA9-11d2-9DEA-00C04FB16162}']
     function IsRestricted(Group:BSTR; Restriction:BSTR; var plRestrictValue:DWord):HRESULT;                StdCall;
     function ShellExecute(aFile:BSTR; vArgs:OLEvariant; vDir:OLEvariant;
                           vOperation:OLEvariant; vShow:OLEvariant):HRESULT;                                StdCall;
@@ -73,22 +76,29 @@ type
     function IsServiceRunning(ServiceName:BSTR; var pRunning:OLEvariant):HRESULT;                          StdCall;
     function CanStartStopService(ServiceName:BSTR; var pCanStartStop:OLEvariant):HRESULT;                  StdCall;
     function ShowBrowserBar(bstrClsid:BSTR; bShow:OLEvariant; var pSuccess:OLEvariant):HRESULT;            StdCall;
-    { IShellDispatch3 }
-    function AddToRecent(varFile:OLEvariant; bstrCategory:BSTR):HRESULT;                                   StdCall;
-    { IShellDispatch4 }
-    function WindowsSecurity:HRESULT;                                                                      StdCall;
-    function ToggleDesktop:HRESULT;                                                                        StdCall;
-    function ExplorerPolicy(bstrPolicyName:BSTR; var pValue: OLEvariant):HRESULT;                          StdCall;
-    function GetSetting(lSetting:long; var Result:Word):HRESULT;                                           StdCall;
-end;
-
- IUnknownFixed = interface
-   ['{00000000-0000-0000-C000-000000000046}']
-   function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} iid : tguid;out obj) : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF}; override;
-   function AddRef : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
-   function Release : longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
  end;
 
+ IShellDispatch3 = Interface(IShellDispatch2)
+    ['{177160CA-BB5A-411C-841D-BD38FACDEAA0}']
+    function AddToRecent(varFile:OLEvariant; bstrCategory:BSTR):HRESULT;                                   StdCall;
+ end;
+
+ IShellDispatch4 = Interface(IShellDispatch3)
+   ['{EFD84B2D-4BCF-4298-BE25-EB542A59FBDA}']
+   function WindowsSecurity:HRESULT;                                                                      StdCall;
+   function ToggleDesktop:HRESULT;                                                                        StdCall;
+   function ExplorerPolicy(bstrPolicyName:BSTR; var pValue: OLEvariant):HRESULT;                          StdCall;
+   function GetSetting(lSetting:long; var Result:Word):HRESULT;                                           StdCall;
+ end;
+
+ {$warnings off}
+ IUnknownFixed = interface
+   ['{00000000-0000-0000-C000-000000000046}']
+   function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} iid : tguid;out obj) : longint;stdcall;
+   function AddRef  : longint; stdcall;
+   function Release : longint; stdcall;
+ end;
+ {$warnings on}
 
 function GetIcon(aFile:string; large:boolean):TIcon;
 function GetLinkProperties(const ShortCut:string; var Props:TLinkProperties):boolean;
@@ -113,19 +123,17 @@ var
 begin
   // https://stackoverflow.com/questions/6582000/executing-show-desktop-from-c
 
-
-  { for some strange reason, IUnknown in objpash.inc:260ff misses 'Release' but
-    has '_Release' - why?? Had to add Relase there. }
-
   { do we need here a CoInitialize(NIL); ?? }
 
   // Create an instance of the shell class
   CoCreateInstance(CLSID_Shell, nil, CLSCTX_INPROC_SERVER, IID_IDispatch, pShellDispatch4);
+
   // Toggle the desktop
   pShellDispatch4.ToggleDesktop;
 
  { for some strange reason, IUnknown in objpash.inc:260ff misses 'Release' but
-   has '_Release' - why?? Had to add Relase there. }
+   has non-working '_Release' - why?? :-(
+ }
   p := pShellDispatch4;
   fixed := IUnknownFixed(p);
   fixed.Release;
