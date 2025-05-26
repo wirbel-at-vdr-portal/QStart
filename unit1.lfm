@@ -1,11 +1,11 @@
 object Form1: TForm1
   Left = 175
-  Height = 671
+  Height = 537
   Top = 98
-  Width = 275
+  Width = 220
   BorderIcons = [biSystemMenu, biMinimize]
+  BorderStyle = bsSizeToolWin
   Caption = 'QStart'
-  DesignTimePPI = 120
   OnClose = FormClose
   OnCreate = FormCreate
   LCLVersion = '3.6.0.0'
