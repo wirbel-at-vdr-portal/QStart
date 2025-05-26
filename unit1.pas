@@ -170,6 +170,10 @@ begin
      localDir:=ini.ReadString('Global', 'LocalDir', localDir);
      Form1.Top :=ini.ReadInteger('Form1', 'Top', 100);
      Form1.Left:=ini.ReadInteger('Form1', 'Left', 100);
+     try
+        Form1.Width:=ini.ReadInteger('Form1', 'Width', 220);
+     except
+     end;
      ini.Free;
      end
   else
@@ -207,6 +211,8 @@ begin
   ini := TIniFile.Create(iniPath);
   ini.WriteInteger('Form1', 'Top',  Form1.Top);
   ini.WriteInteger('Form1', 'Left', Form1.Left);
+  if Form1.Width <> 220 then
+     ini.WriteInteger('Form1', 'Width', Form1.Width);
   ini.Free;
 end;
 

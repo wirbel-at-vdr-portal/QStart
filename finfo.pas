@@ -84,7 +84,7 @@ type
  end;
 
  IShellDispatch4 = Interface(IShellDispatch3)
-   ['{EFD84B2D-4BCF-4298-BE25-EB542IShellDispatchA59FBDA}']
+   ['{EFD84B2D-4BCF-4298-BE25-EB542A59FBDA}']
    function WindowsSecurity:HRESULT;                                                                      StdCall;
    function ToggleDesktop:HRESULT;                                                                        StdCall;
    function ExplorerPolicy(bstrPolicyName:BSTR; var pValue: OLEvariant):HRESULT;                          StdCall;
