@@ -112,7 +112,7 @@ var FileInfo : TSHFILEINFO;
 
 procedure ShowDesktop;
 const
-  IID_IDispatch: TGUID =
+  IID_IShellDispatch4: TGUID =
     (D1:$00020400; D2:$0000; D3:$0000; D4:($C0,$00,$00,$00,$00,$00,$00,$46));
   CLSID_Shell: TGUID =
     (D1:$13709620; D2:$C279; D3:$11CE; D4:($A4,$9E,$44,$45,$53,$54,$00,$00));
@@ -125,8 +125,10 @@ begin
 
   { do we need here a CoInitialize(NIL); ?? }
 
-  // Create an instance of the shell class
-  CoCreateInstance(CLSID_Shell, nil, CLSCTX_INPROC_SERVER, IID_IDispatch, pShellDispatch4);
+  { Create an instance of the shell class.
+    CLSCTX_SERVER := CLSCTX_INPROC_SERVER or CLSCTX_LOCAL_SERVER or CLSCTX_REMOTE_SERVER;
+  }
+  CoCreateInstance(CLSID_Shell, nil, CLSCTX_SERVER, IID_IShellDispatch4, pShellDispatch4);
 
   // Toggle the desktop
   pShellDispatch4.ToggleDesktop;
